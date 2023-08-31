@@ -1,216 +1,98 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "authorship_tag": "ABX9TyM+eNR0V+feEMJ9umVScgxk"
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "code",
-      "execution_count": null,
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "Vlvi_ASRx6VJ",
-        "outputId": "e52916f3-ec6e-4f32-daea-e8db14b9e16f"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Requirement already satisfied: pygame in /usr/local/lib/python3.10/dist-packages (2.5.1)\n"
-          ]
-        }
-      ],
-      "source": [
-        "!pip install pygame\n",
-        "import pygame\n",
-        "import random\n",
-        "\n",
-        "# Game Constants\n",
-        "SCREEN_WIDTH = 800\n",
-        "SCREEN_HEIGHT = 600\n",
-        "WHITE = (255, 255, 255)\n",
-        "BLUE = (0, 0, 255)\n",
-        "\n",
-        "pygame.init()\n",
-        "screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))\n",
-        "pygame.display.set_caption(\"Retro Pong with Enhancements\")\n",
-        "clock = pygame.time.Clock()\n",
-        "\n",
-        "\n",
-        "class Paddle:\n",
-        "    def __init__(self, x, y):\n",
-        "        self.x = x\n",
-        "        self.y = y\n",
-        "        self.width = 10\n",
-        "        self.height = 60\n",
-        "        self.speed = 5\n",
-        "        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)\n",
-        "\n",
-        "    def move(self, direction):\n",
-        "        if direction == \"up\" and self.y > 0:\n",
-        "            self.y -= self.speed\n",
-        "        elif direction == \"down\" and self.y + self.height < SCREEN_HEIGHT:\n",
-        "            self.y += self.speed\n",
-        "        self.rect.y = self.y\n",
-        "\n",
-        "    def draw(self):\n",
-        "        pygame.draw.rect(screen, BLUE, self.rect)\n",
-        "\n",
-        "\n",
-        "class Ball:\n",
-        "    def __init__(self, x, y):\n",
-        "        self.x = x\n",
-        "        self.y = y\n",
-        "        self.radius = 8\n",
-        "        self.speed_x = random.choice([-4, 4])\n",
-        "        self.speed_y = random.choice([-4, 4])\n",
-        "\n",
-        "    def move(self):\n",
-        "        self.x += self.speed_x\n",
-        "        self.y += self.speed_y\n",
-        "        # Ball collision with top and bottom\n",
-        "        if self.y - self.radius <= 0 or self.y + self.radius >= SCREEN_HEIGHT:\n",
-        "            self.speed_y = -self.speed_y\n",
-        "\n",
-        "    def draw(self):\n",
-        "        pygame.draw.circle(screen, BLUE, (self.x, self.y), self.radius)\n",
-        "\n",
-        "    def split(self):\n",
-        "        ball1 = Ball(self.x, self.y)\n",
-        "        ball1.speed_x = 4\n",
-        "        ball1.speed_y = random.choice([-4, 4])\n",
-        "\n",
-        "        ball2 = Ball(self.x, self.y)\n",
-        "        ball2.speed_x = -4\n",
-        "        ball2.speed_y = random.choice([-4, 4])\n",
-        "\n",
-        "        return [ball1, ball2]\n",
-        "\n",
-        "\n",
-        "class PowerUp:\n",
-        "    def __init__(self, x, y, type):\n",
-        "        self.x = x\n",
-        "        self.y = y\n",
-        "        self.type = type\n",
-        "        self.radius = 10\n",
-        "        self.speed_x = -2\n",
-        "        self.speed_y = 0\n",
-        "\n",
-        "    def move(self):\n",
-        "        self.x += self.speed_x\n",
-        "\n",
-        "    def draw(self):\n",
-        "        if self.type == 'extend':\n",
-        "            pygame.draw.rect(screen, (0, 255, 0), (self.x, self.y, 20, 10))\n",
-        "        elif self.type == 'spin':\n",
-        "            pygame.draw.circle(screen, (255, 0, 0), (self.x, self.y), self.radius)\n",
-        "\n",
-        "\n",
-        "class AIPlayer:\n",
-        "    def __init__(self, paddle):\n",
-        "        self.paddle = paddle\n",
-        "        self.speed = 3\n",
-        "\n",
-        "    def move(self, balls):\n",
-        "        if balls:\n",
-        "            closest_ball = min(balls, key=lambda b: b.x)\n",
-        "            if self.paddle.y + self.paddle.height/2 < closest_ball.y:\n",
-        "                self.paddle.y += self.speed\n",
-        "            elif self.paddle.y + self.paddle.height/2 > closest_ball.y:\n",
-        "                self.paddle.y -= self.speed\n",
-        "\n",
-        "\n",
-        "def main():\n",
-        "    paddle_left = Paddle(5, SCREEN_HEIGHT // 2 - 30)\n",
-        "    paddle_right = Paddle(SCREEN_WIDTH - 20, SCREEN_HEIGHT // 2 - 30)\n",
-        "    balls = [Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)]\n",
-        "    powerups = []\n",
-        "    score_left = 0\n",
-        "    score_right = 0\n",
-        "    ai_left = AIPlayer(paddle_left)\n",
-        "\n",
-        "    running = True\n",
-        "    while running:\n",
-        "        screen.fill(WHITE)\n",
-        "\n",
-        "        for event in pygame.event.get():\n",
-        "            if event.type == pygame.QUIT:\n",
-        "                running = False\n",
-        "\n",
-        "        keys = pygame.key.get_pressed()\n",
-        "        if keys[pygame.K_UP]:\n",
-        "            paddle_right.move(\"up\")\n",
-        "        if keys[pygame.K_DOWN]:\n",
-        "            paddle_right.move(\"down\")\n",
-        "\n",
-        "        ai_left.move(balls)\n",
-        "\n",
-        "        new_balls = []\n",
-        "        for ball in balls:\n",
-        "            ball.move()\n",
-        "            if ball.x - ball.radius <= paddle_left.x + paddle_left.width and ball.y >= paddle_left.y and ball.y <= paddle_left.y + paddle_left.height or \\\n",
-        "               ball.x + ball.radius >= paddle_right.x and ball.y >= paddle_right.y and ball.y <= paddle_right.y + paddle_right.height:\n",
-        "                ball.speed_x = -ball.speed_x\n",
-        "                if random.random() < 0.1:\n",
-        "                    new_balls.extend(ball.split())\n",
-        "\n",
-        "            if ball.x - ball.radius < 0:\n",
-        "                score_right += 1\n",
-        "                balls.remove(ball)\n",
-        "            elif ball.x + ball.radius > SCREEN_WIDTH:\n",
-        "                score_left += 1\n",
-        "                balls.remove(ball)\n",
-        "\n",
-        "        balls.extend(new_balls)\n",
-        "\n",
-        "        if random.random() < 0.005:\n",
-        "            power_type = random.choice(['extend', 'spin'])\n",
-        "            powerups.append(PowerUp(SCREEN_WIDTH - 40, random.randint(10, SCREEN_HEIGHT - 10), power_type))\n",
-        "\n",
-        "        for powerup in powerups:\n",
-        "            powerup.move()\n",
-        "            if paddle_left.rect.colliderect(powerup.x, powerup.y, 20, 10):\n",
-        "                if powerup.type == 'extend':\n",
-        "                    paddle_left.height += 30\n",
-        "                    paddle_left.rect.height = paddle_left.height\n",
-        "                elif powerup.type == 'spin':\n",
-        "                    for ball in balls:\n",
-        "                        ball.speed_y = random.choice([-6, -5, -4, 4, 5, 6])\n",
-        "                powerups.remove(powerup)\n",
-        "\n",
-        "        paddle_left.draw()\n",
-        "        paddle_right.draw()\n",
-        "        for ball in balls:\n",
-        "            ball.draw()\n",
-        "        for powerup in powerups:\n",
-        "            powerup.draw()\n",
-        "\n",
-        "        font = pygame.font.Font(None, 36)\n",
-        "        score_display = font.render(f\"{score_left} - {score_right}\", True, BLUE)\n",
-        "        screen.blit(score_display, (SCREEN_WIDTH // 2 - 50, 10))\n",
-        "\n",
-        "        pygame.display.flip()\n",
-        "        clock.tick(60)\n",
-        "\n",
-        "    pygame.quit()\n",
-        "\n",
-        "if __name__ == \"__main__\":\n",
-        "    main()"
-      ]
-    }
-  ]
-}
+import pygame
+import random
+
+# Initialize pygame
+pygame.init()
+
+# Colors
+WHITE = (255, 255, 255)
+BLUE = (50, 130, 255)
+
+# Screen dimensions
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+
+# Create the screen and clock
+screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+pygame.display.set_caption("Pixel Paddle Party")
+clock = pygame.time.Clock()
+
+class Paddle:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.width = 15
+        self.height = 60
+        self.speed = 5
+        self.rect = pygame.Rect(self.x, self.y, self.width, self.height)
+
+    def move(self, direction):
+        if direction == "up" and self.y > 0:
+            self.y -= self.speed
+        elif direction == "down" and self.y < SCREEN_HEIGHT - self.height:
+            self.y += self.speed
+        self.rect.y = self.y
+
+    def draw(self):
+        pygame.draw.rect(screen, BLUE, self.rect)
+
+class Ball:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+        self.radius = 8
+        self.speed_x = random.choice([-4, 4])
+        self.speed_y = random.choice([-4, 4])
+
+    def move(self):
+        self.x += self.speed_x
+        self.y += self.speed_y
+
+        # Ball collision with top and bottom
+        if self.y <= 0 or self.y >= SCREEN_HEIGHT:
+            self.speed_y = -self.speed_y
+
+    def draw(self):
+        pygame.draw.circle(screen, BLUE, (self.x, self.y), self.radius)
+
+def main():
+    paddle_left = Paddle(5, SCREEN_HEIGHT // 2 - 30)
+    paddle_right = Paddle(SCREEN_WIDTH - 20, SCREEN_HEIGHT // 2 - 30)
+    ball = Ball(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2)
+
+    running = True
+    while running:
+        screen.fill(WHITE)
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            paddle_right.move("up")
+        if keys[pygame.K_DOWN]:
+            paddle_right.move("down")
+        if keys[pygame.K_w]:
+            paddle_left.move("up")
+        if keys[pygame.K_s]:
+            paddle_left.move("down")
+
+        ball.move()
+
+        # Ball collision with paddles
+        if ball.x - ball.radius <= paddle_left.x + paddle_left.width and ball.y >= paddle_left.y and ball.y <= paddle_left.y + paddle_left.height or \
+           ball.x + ball.radius >= paddle_right.x and ball.y >= paddle_right.y and ball.y <= paddle_right.y + paddle_right.height:
+            ball.speed_x = -ball.speed_x
+
+        paddle_left.draw()
+        paddle_right.draw()
+        ball.draw()
+
+        pygame.display.flip()
+        clock.tick(60)
+
+    pygame.quit()
+
+if __name__ == "__main__":
+    main()
